@@ -1,0 +1,28 @@
+{
+  "name": "com.bill.ss-outline",
+  "version": "2.0.0",
+  "displayName": "Bill SS Outline",
+  "description": "Screen-space outline for URP 17 (Render Graph): depth, normal and colour edges, selection by rendering layer, occlusion mask, distance/height fade, and an alpha-mask path that skips the second draw for large crowds.",
+  "unity": "6000.0",
+  "keywords": [
+    "outline",
+    "urp",
+    "render-graph",
+    "toon",
+    "post-processing"
+  ],
+  "author": {
+    "name": "Bill Truong",
+    "url": "https://github.com/billtruong003"
+  },
+  "license": "MIT",
+  "documentationUrl": "https://github.com/billtruong003/Bill-SSOutline#readme",
+  "changelogUrl": "https://github.com/billtruong003/Bill-SSOutline/blob/main/CHANGELOG.md",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/billtruong003/Bill-SSOutline.git"
+  },
+  "dependencies": {
+    "com.unity.render-pipelines.universal": "17.0.0"
+  }
+}

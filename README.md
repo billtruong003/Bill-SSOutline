@@ -1,146 +1,116 @@
+# Bill SS Outline (URP 17)
 
-# ShadersLab - SSOutline (URP) 🖌️
+Full-screen stylised outline for Unity 6 / URP 17, built on the **Render Graph** API. Edges come from
+depth, normals and colour; you can outline the whole screen, only objects on chosen rendering layers,
+or both.
 
-> A robust, full-screen stylized outline solution for Unity URP using Render Graph / Scriptable Renderer Features.
+![Outline on a stylised biome](Documentation~/images/biome.png)
 
-![Hero Image](Screenshots/biome.png)
+## Features
 
-![Unity](https://img.shields.io/badge/Unity-2021.3%2B-black)
-![Pipeline](https://img.shields.io/badge/RenderPipeline-URP-blue)
-![License](https://img.shields.io/badge/License-MIT-green)
-![Feature](https://img.shields.io/badge/Feature-RenderGraph-purple)
+- **Edge detection:** depth, normals and colour; Sobel (smoother) or Roberts Cross (cheaper).
+- **Modes:** `FullScreen`, `SelectionOnly` (rendering-layer mask), `Mixed`.
+- **Occlusion mask:** keep outlines off chosen layers such as water or glass.
+- **Fades:** by camera distance and by world height.
+- **Line colour:** a fixed colour, or tinted and darkened from the object's own colour.
+- **Resolution-independent width:** authored for a reference short side, scaled to the camera target;
+  per-camera multiplier with `OutlineCameraWidth`.
+- **Alpha-mask path for crowds:** shaders that write the mask into the colour alpha skip the second
+  draw into the selection mask.
+- **Debug views:** depth, normals, colour, edges only, mask, occlusion, scene alpha.
 
-This repository provides a versatile Screen-Space Outline effect that works via Depth, Normals, and Color edge detection. It supports **Occlusion Masking** (hiding outlines behind semi-transparent objects like water) and **Selective Masking** (outlining specific objects only).
+## Install
 
----
+Package Manager → **Add package from git URL…**
 
-## 📋 Table of Contents
-- [ShadersLab - SSOutline (URP) 🖌️](#shaderslab---ssoutline-urp-️)
-  - [📋 Table of Contents](#-table-of-contents)
-  - [✨ Features](#-features)
-  - [🚀 Installation](#-installation)
-  - [🔌 Integration Guide (For Custom Shaders)](#-integration-guide-for-custom-shaders)
-  - [🎮 Usage](#-usage)
-    - [Key Parameters](#key-parameters)
-  - [⚙ Configuration](#-configuration)
-  - [📦 Compatibility](#-compatibility)
-  - [⚡ Performance](#-performance)
-  - [📝 Credits \& License](#-credits--license)
-
----
-
-## ✨ Features
-
-- **Multiple Algorithms:** Choose between **Sobel** (smooth, higher quality) or **Roberts Cross** (crisp, faster).
-- **Selection Mode:** Outline only specific objects using Layer Masks.
-- **Occlusion Support:** Prevents outlines from drawing over specific layers (e.g., Water, UI, Glass).
-- **Distance & Height Fading:** Fade out outlines based on distance from camera or world height.
-- **Debug Modes:** Visualize Depth, Normals, or the generated Masks directly in the Game View.
-- **Render Graph Ready:** Built using modern Unity URP APIs for maximum compatibility with Unity 6.
-
----
-
-## 🚀 Installation
-
-1. Import the package/folder `Assets/Shaders/Outline` into your project.
-2. Locate your **URP Renderer Data** asset (usually in `Settings/ForwardRenderer`).
-3. Click **Add Renderer Feature** -> `Outline Feature`.
-4. Ensure `Depth Texture` and `Opaque Texture` are enabled on your URP Asset.
-
----
-
-## 🔌 Integration Guide (For Custom Shaders)
-
-To ensure your custom shaders (especially vertex-animated foliage or transparent objects) work correctly with the **Selection Mode**, you **must** add a specific Pass to your shader.
-
-The Outline Feature looks for a pass tagged `SelectionMask` (or fallback) to render the object into the mask buffer.
-
-**Add this Pass to your Shader:**
-
-```hlsl
-Pass
-{
-    Name "SelectionMask"
-    Tags { "LightMode" = "SelectionMask" }
-    
-    // Standard Rendering State
-    ZWrite On
-    ColorMask R // We only need the Red channel for the mask
-
-    HLSLPROGRAM
-    #pragma vertex Vertex
-    #pragma fragment Fragment
-    
-    #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-
-    // ... Your vertex struct and logic ...
-    
-    half4 Fragment(Varyings input) : SV_Target
-    {
-        // Setup logic (Clip alpha if needed)
-        // clip(alpha - _Cutoff); 
-
-        // Return solid Red
-        return half4(1, 0, 0, 1);
-    }
-    ENDHLSL
-}
+```text
+https://github.com/billtruong003/Bill-SSOutline.git#v2.0.0
 ```
 
-*Note: The [ShadersLab-Biome](https://github.com/YourUsername/ShadersLab-Biome) repository is fully pre-configured with this pass.*
+Requires Unity 6000.0+ and URP 17 with Render Graph (compatibility mode off).
 
----
+## Setup
 
-## 🎮 Usage
+1. **Renderer:** on your URP Renderer Data, **Add Renderer Feature ▸ Outline Feature**.
+2. **Shaders:** add `Hidden/FullScreen/Outline` and `Hidden/Outline/SelectionMask` to
+   **Project Settings ▸ Graphics ▸ Always Included Shaders**. The feature finds them by name, so a
+   player build strips them otherwise.
+3. **Volume:** on a Volume profile, **Add Override ▸ Post-processing ▸ Custom ▸ Outline**, tick
+   **Is Active**, pick a mode.
+4. **Selection (optional):** in **Project Settings ▸ Tags and Layers ▸ Rendering Layers**, name a
+   layer such as `Outline`, put the renderers you want outlined on it, and choose it in
+   **Selection Layer**.
 
-1. Add a **Global Volume** to your scene (or use an existing one).
-2. Click **Add Override** -> `Custom` -> `Outline`.
-3. Enable the checkbox to activate.
+## Volume settings
 
-### Key Parameters
+| Setting | |
+|---|---|
+| Mode | `FullScreen`, `SelectionOnly`, `Mixed` |
+| Selection Layer / Occlusion Layer | rendering-layer masks |
+| Algorithm | `Sobel`, `RobertsCross` |
+| Use Depth / Normals / Color + thresholds | which edges count and how strong they must be |
+| Thickness, Reference Short Side | width in pixels at the reference resolution |
+| Outline Color, Tint Amount, Tint Darken | fixed colour or object-tinted line |
+| Distance fade, Height fade | start/end ranges |
+| Debug Mode | visualise each input |
 
-| Parameter           | Description                                                        | Default         |
-| :------------------ | :----------------------------------------------------------------- | :-------------- |
-| **Mode**            | `FullScreen`, `SelectionOnly`, or `Mixed`.                         | FullScreen      |
-| **Selection Layer** | Layer mask for objects to outline (requires Selection Mode).       | Nothing         |
-| **Occlusion Layer** | Layer mask for objects that should hide the outline (e.g., Water). | Nothing         |
-| **Thickness**       | Width of the outline in pixels.                                    | 2               |
-| **Thresholds**      | Sensitivity for Depth, Normal, and Color edge detection.           | 1.5 / 0.4 / 0.2 |
+## Code hooks
 
----
+```csharp
+using BillSSOutline;
 
-## ⚙ Configuration
+// Layers drawn with their own "OutlineSelectionMask" pass (vertex-animated meshes, e.g. VAT)
+OutlineOverrides.MaterialDrivenLayers = RenderingLayerMask.GetMask("Outline Enemy");
 
-- **Fixing Flickering:** If lines flicker on flat surfaces, increase the **Normal Threshold**.
-- **Fixing Skybox Lines:** Increase **Depth Threshold** so the infinite depth of the skybox doesn't trigger an edge.
-- **Soft vs Hard:** Use **Sobel** for softer, artistic lines. Use **Roberts Cross** for sharp, technical lines.
+// Layers whose shaders call BillOutlineAlpha() (see below)
+OutlineOverrides.AlphaCapableLayers = RenderingLayerMask.GetMask("Outline Enemy", "Outline Env");
 
----
+// Drop normal edges (and the DepthNormals prepass) on low-end devices
+OutlineOverrides.AllowNormals = () => QualitySettings.GetQualityLevel() >= 2;
 
-## 📦 Compatibility
+// Runtime look overrides (QA, photo mode); null = volume value
+OutlineOverrides.Colour = Color.black;
+OutlineOverrides.Thickness = 3;
+OutlineOverrides.Hidden = true;          // skips every outline pass
+OutlineOverrides.ClearLook();
+```
 
-- **Render Pipeline:** Unity 6.
-- **Render Graph:** Fully supported.
-- **VR:** Single Pass Instanced supported (Screen-space effects may vary on periphery). (Haven't test yet)
+Look overrides reset at the start of every Play session.
 
----
+## Custom shaders
 
-## ⚡ Performance
+**Selection by own pass.** Vertex-animated shaders must draw the mask themselves, or the silhouette
+freezes in bind pose. Add a pass tagged `LightMode = OutlineSelectionMask` that outputs `1`, and put
+its renderers on a layer listed in `OutlineOverrides.MaterialDrivenLayers`.
 
-| Feature Enabled | ALU Cost |     Memory      |
-| :-------------- | :------: | :-------------: |
-| Basic Outline   |   Low    | 1 Fullscreen RT |
-| Selection Mode  |  Medium  |  +1 R8 Texture  |
-| Occlusion Mode  |  Medium  |  +1 R8 Texture  |
+**Alpha mask.** For large crowds, write the mask into the colour alpha instead of drawing twice:
 
-*Tip: Disable `Use Color` if you only need geometry outlines to save texture fetches.*
+```hlsl
+#include "Packages/com.bill.ss-outline/Shaders/OutlineAlphaMask.hlsl"
+// at the end of the forward fragment:
+color.a = BillOutlineAlpha(color.a);
+```
 
----
+`BillOutlineAlpha` returns 0 for renderers on the active alpha layers and 1 for everything else (or
+your alpha unchanged when the path is off). The feature turns the path off for scene view, cameras
+rendering into textures and colour formats without alpha.
 
-## 📝 Credits & License
+## Optional: profile guard
 
-- **Author:** [Bill The Dev](https://github.com/billtruong003)
-- **License:** MIT
+Define **`BILL_OUTLINE_PROFILE_GUARD`** to make every scene Volume use a runtime copy of its profile
+in Play Mode, so nothing written during play (code, debug tools, inspector tweaks) can change the
+profile asset on disk.
 
-**Feel free to contribute or report issues!**  
-[Discord](https://discord.gg/gYUSw7bF) | [Facebook](https://www.facebook.com/billthedev/) | [Youtube](https://www.youtube.com/@BillTheDev)
+## Performance notes
+
+- The feature asks URP for the Color input only while it is active; that allocates an intermediate
+  colour target and blocks native render-pass merging on mobile for that camera.
+- Normal edges need the DepthNormals prepass, which redraws all opaques. Use `AllowNormals` to turn
+  them off where they are not worth it.
+- `Outline.shader` uses `multi_compile_local` for every option, so Always Included ships all
+  combinations (about 768 variants). Strip the debug and occlusion keywords if build size matters.
+- WebGL needs WebGL 2 (rendering-layer reads).
+
+## License
+
+MIT, see [LICENSE](LICENSE).
